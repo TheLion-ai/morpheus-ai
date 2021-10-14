@@ -1,0 +1,74 @@
+Category,Instrument/sample,Parameter,Acronym,Unit of measure,COVID-specific features,CBC features,"Missing rate, %"
+Hematological,Sysmex XE 2100/whole blood,White blood cells,WBC,109/L,1,1,2.4
+Hematological,Sysmex XE 2100/whole blood,Red blood cells,RBC,1012/L,1,1,3.6
+Hematological,Sysmex XE 2100/whole blood,Hemoglobin,HGB,g/dL,1,1,2.4
+Hematological,Sysmex XE 2100/whole blood,Hematocrit,HCT,%,1,1,2.4
+Hematological,Sysmex XE 2100/whole blood,Mean corpuscular volume,MCV,fL,1,1,3.6
+Hematological,Sysmex XE 2100/whole blood,Mean corpuscolar hemoglobin,MCH,pg/Cell,1,1,3.6
+Hematological,Sysmex XE 2100/whole blood,Mean corpuscolar hemoglobin concentration,MCHC,g Hb/dL,1,1,2.4
+Hematological,Sysmex XE 2100/whole blood,Erythrocyte distribution width,RDW,CV%,1,1,3.7
+Hematological,Sysmex XE 2100/whole blood,Platelets,PLT,109/L,1,1,3.6
+Hematological,Sysmex XE 2100/whole blood,Mean platelet volume,MPV,fL,1,1,5.9
+Hematological,Sysmex XE 2100/whole blood,"Neutrophils count, (%)",NE,%,1,1,18.9
+Hematological,Sysmex XE 2100/whole blood,"Lymphocytes count, (%)",LY,%,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,"Monocytes count, (%)",MO,%,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,"Eosinophils count, (%)",EO,%,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,"Basophils count, (%)",BA,%,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,Neutrophils count,NET,109/L,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,Lymphocytes count,LYT,109/L,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,Monocytes count,MOT,109/L,1,1,18.9
+Hematological,Sysmex XE 2100/whole blood,Eosinophils count,EOT,109/L,1,1,15.2
+Hematological,Sysmex XE 2100/whole blood,Basophils count,BAT,109/L,1,1,18.9
+Coagulation,STA-R MAX/Plasma sample,Prothrombin time (INR),PTINR,INR,,,31
+Coagulation,,Activated partial thromboplastin time (R),PPTR,Ratio,,,31.5
+Coagulation,,Fibrinogen,FG,mg/dL,,,70.2
+Coagulation,,D-dimer,XDP,µg/mL,,,70.4
+Biochemical,Cobas 6000 Roche/serum sample,Glucose,GLU,mg/dL,1,,3.4
+Biochemical,Cobas 6000 Roche/serum sample,Creatinine,CREA,mg/dL,1,,2.4
+Biochemical,Cobas 6000 Roche/serum sample,Urea,UREA,mg/dL,1,,37
+Biochemical,Cobas 6000 Roche/serum sample,Direct bilirubin,BILD,mg/dL,,,23.3
+Biochemical,Cobas 6000 Roche/serum sample,Indirect bilirubin,BILIN,mg/dL,,,23.3
+Biochemical,Cobas 6000 Roche/serum sample,Total bilirubin,BILT,mg/dL,,,25.3
+Biochemical,Cobas 6000 Roche/serum sample,Alanine aminotransferase,ALT,U/L,1,,3.1
+Biochemical,Cobas 6000 Roche/serum sample,Aspartate aminotransferase,AST,U/L,1,,3.2
+Biochemical,Cobas 6000 Roche/serum sample,Alkaline phosphatase,ALP,U/L,1,,23.7
+Biochemical,Cobas 6000 Roche/serum sample,Gamma glutamyltransferase,GGT,U/L,1,,24.5
+Biochemical,Cobas 6000 Roche/serum sample,Lactate dehydrogenase,LDH,U/L,1,,13.2
+Biochemical,Cobas 6000 Roche/serum sample,Creatine kinase,CK,U/L,1,,60.3
+Biochemical,Cobas 6000 Roche/serum sample,Sodium,NA,mmol/L,1,,3.9
+Biochemical,Cobas 6000 Roche/serum sample,Potassium,K,mmol/L,1,,2.7
+Biochemical,Cobas 6000 Roche/serum sample,Calcium,CA,mmol/L,1,,3.8
+Biochemical,Cobas 6000 Roche/serum sample,C-reactive protein,CRP,mg/L,1,,5.5
+Biochemical,Cobas 6000 Roche/serum sample,NT-proB-type natriuretic peptide,PROBNP,pg/mL,,,91.1
+Biochemical,Cobas 6000 Roche/serum sample,Troponin T,TROPOT,ng/L,,,62.8
+Biochemical,Cobas 6000 Roche/serum sample,Interleukin 6,IL6,pg/mL,,,92.2
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",pH,PHPOC,U,,,18.5
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",Carbonic anhydride (pCO2),CO2POC,mmHg,,,22.4
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",Oxygen (pO2),PO2POC,mmHg,,,22.4
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",Bicarbonates,BICPOC,mmol/L,,,18.7
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",Standard calculated bicarbonates,BISPOC,mmol/L,,,23
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",Base excess,BEPOC,mmol/L,,,22.8
+Rapidpoint 500 (Siemens Healthcare),"Hemogasanalysis, venous blood gas",Actual base excess,BEEPOC,mmol/L,,,18.9
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,Hematocrit (POC),HCTPOC,%,,,22.7
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,Total oxyhemoglobin,THBPOC,g/dL,,,22.8
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,O2 saturation,SO2POC,%,,,18.3
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,Oxyhemoglobin/Total hemoglobin,FO2POC,%,,,18.6
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,Carboxyhemoglobin,FCOPOC,%,,,18.8
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,Methemoglobin,METPOC,%,,,22.5
+Rapidpoint 500 (Siemens Healthcare),CO-oxymetry,Deoxyhemoglobin,HHBPOC,%,,,18.8
+Rapidpoint 500 (Siemens Healthcare),Oxygenation,Bound O2 maximum concentration,BO2POC,mL/dL,,,23.8
+Rapidpoint 500 (Siemens Healthcare),Oxygenation,Total oxygen,CTOPOC,mL/dL,,,20.9
+Rapidpoint 500 (Siemens Healthcare),Oxygenation,Inspired oxygen fraction,FIOPOC,mL/dL,,,67.4
+Rapidpoint 500 (Siemens Healthcare),Oxygenation,Inspired O2/O2 ratio,OFIPOC,Ratio,,,64
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Sodium (POC),NAPOC,mmol/L,,,22.5
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Potassium (POC),KPOC,mmol/L,,,22.4
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Chloride (POC),CLPOC,mmol/L,,,22.7
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Ionized calcium (POC),CAPOC,mmol/L,,,23.1
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Standard ionized calcium (POC),CASPOC,mmol/L,,,23.2
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Anion gap,ANGPOC,mmol/L,,,19.6
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Glucose blood gas,GLUEMO,mg/dL,,,18.6
+Rapidpoint 500 (Siemens Healthcare),Electrolytes POC,Lactate (POC),LATPOC,mmol/L,,,18.5
+Additional information,,Age,Age,Years,1,1,0
+Additional information,,Gender,Sex,Male/Female,1,1,0
+Additional information,,COVID-19 suspect (patient suffers from COVID-19 specific symptoms at triage),Suspect,Yes/No,1,1,0
+arget,,COVID-19 positivity,target,Positive/Negative,1,1,0
