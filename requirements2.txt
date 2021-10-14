@@ -1,0 +1,14 @@
+torch
+numpy
+scipy
+scikit-learn
+catboost
+xgboost
+matplotlib
+tqdm
+tensorboardX
+pandas
+prefetch_generator
+requests
+category_encoders
+https://github.com/facebookresearch/qhoptim/archive/master.zip
