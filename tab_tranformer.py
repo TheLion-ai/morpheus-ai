@@ -17,12 +17,54 @@ from tab_transformer_pytorch import TabTransformer
 from torch.nn.modules.loss import CrossEntropyLoss
 import uuid
 
+
+from pytorch_lightning import Trainer
+from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
+from torch.utils.data import Dataset, DataLoader
+import pandas as pd
+
 import lib
 from torch_losses import *
 from torch_losses import DiceLoss
 
+
 #https://github.com/lucidrains/tab-transformer-pytorch
 #TODO separate features into categorical and continous
+
+class CBCDataset(Dataset):
+    def __init__(self, X, y):
+        self.X_cont = X[:, 0:-2].astype(np.float32)
+        self.X_cat = X[:, -2::].astype(np.int64)
+        self.y = y.astype(np.float32)
+
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, idx):
+        return self.X_cat[idx], self.X_cont[idx], self.y[idx]
+
+def to_device(data, device):
+    """Move tensor(s) to chosen device"""
+    if isinstance(data, (list,tuple)):
+        return [to_device(x, device) for x in data]
+    return data.to(device, non_blocking=True)
+
+class DeviceDataLoader():
+    """Wrap a dataloader to move data to a device"""
+    def __init__(self, dl, device):
+        self.dl = dl
+        self.device = device
+        
+    def __iter__(self):
+        """Yield a batch of data after moving it to device"""
+        for b in self.dl: 
+            yield to_device(b, self.device)
+
+    def __len__(self):
+        """Number of batches"""
+        return len(self.dl)
+
 
 df_desc = pd.read_csv("feature_desc.csv")
 df = pd.read_csv("all_training.csv")
@@ -46,7 +88,7 @@ for col in cbc_columns:
         df_cbc[col] = df_cbc[col].astype(int)
 
 cbc_cols_del = ["NET", "RBC", "HCT", "MCH", "NE", "EO", "LY", "BAT"]
-df_cbc = df_cbc.drop(cbc_cols_del, axis=1).drop(["Sex", "Suspect"], axis=1)
+df_cbc = df_cbc.drop(cbc_cols_del, axis=1) #.drop(["Sex", "Suspect"], axis=1)
 
 
 X = np.array(df_cbc.copy().drop("target", axis=1))
@@ -59,25 +101,15 @@ X_scaled = scalar.fit_transform(X)
 X_train, X_test, y_train, y_test = train_test_split(
     X_scaled, y, test_size=0.2, random_state=42, stratify=y
 )
-# unsupervised_model = TabNetPretrainer(
-#     optimizer_fn=torch.optim.Adam,
-#     optimizer_params=dict(lr=2e-2),
-#     mask_type='entmax' # "sparsemax"
-# )
 
-# unsupervised_model.fit(
-#     X_train=X_train,
-#     eval_set=[X_test],
-#     pretraining_ratio=0.8,
-# )
 
 class_weights = compute_class_weight("balanced", classes= np.unique(y), y=y)
 class_weights = torch.tensor(class_weights, dtype=torch.float).cuda()
 cont_mean_std = torch.randn(10, 2)
 
 model = TabTransformer(
-    categories = [],      # tuple containing the number of unique values within each category
-    num_continuous = 10,                # number of continuous values
+    categories = (1, 2),      # tuple containing the number of unique values within each category
+    num_continuous = 11,                # number of continuous values
     dim = 32,                           # dimension, paper set at 32
     dim_out = 1,                        # binary prediction, but could be anything
     depth = 6,                          # depth, paper recommended 6
@@ -86,71 +118,55 @@ model = TabTransformer(
     ff_dropout = 0.1,                   # feed forward dropout
     mlp_hidden_mults = (4, 2),          # relative multiples of each hidden dimension of the last mlp to logits
     mlp_act = nn.ReLU(),                # activation for final mlp, defaults to relu, but could be anything else (selu etc)
-    continuous_mean_std = cont_mean_std # (optional) - normalize the continuous values before layer norm
+    # continuous_mean_std = cont_mean_std # (optional) - normalize the continuous values before layer norm
 )
 
-trainer = lib.Trainer(
-    model=model, loss_function=F.cross_entropy,
-    experiment_name=str(uuid.uuid4()),
-    warm_start=False,
-    Optimizer=torch.optim.Adam,
-    # optimizer_params=dict(nus=(0.7, 1.0), betas=(0.95, 0.998)),
-    verbose=True,
-    n_last_checkpoints=5
-)
 
-loss_history, err_history = [], []
-best_val_err = 1.0
-best_step = 0
-early_stopping_rounds = 2500
-report_frequency = 1000
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-for batch in lib.iterate_minibatches(X_train,
-                                     y_train,
-                                     batch_size=512, 
-                                     shuffle=True,
-                                     epochs=float('inf')):
-    
-    # batch_x, batch_y = batch
-    # batch_x = {""}
-    
-    metrics = trainer.train_on_batch(*batch, device=device)
-    
-    loss_history.append(metrics['loss'])
+batch_size = 128
+train_ds = CBCDataset(X_train, y_train)
+valid_ds = CBCDataset(X_test, y_test)
+train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
+valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
-    if trainer.step % report_frequency == 0:
-        trainer.save_checkpoint()
-        trainer.average_checkpoints(out_tag='avg')
-        trainer.load_checkpoint(tag='avg')
-        err = trainer.evaluate_classification_error(
-            X_test,
-            y_test,
-            device=device,
-            batch_size=128)
-        
-        if err < best_val_err:
-            best_val_err = err
-            best_step = trainer.step
-            trainer.save_checkpoint(tag='best')
-        
-        err_history.append(err)
-        trainer.load_checkpoint()  # last
-        trainer.remove_old_temp_checkpoints()
-            
-        plt.figure(figsize=[12, 6])
-        plt.subplot(1, 2, 1)
-        plt.plot(loss_history)
-        plt.grid()
-        plt.subplot(1,2,2)
-        plt.plot(err_history)
-        plt.grid()
-        plt.show()
-        print("Loss %.5f" % (metrics['loss']))
-        print("Val Error Rate: %0.5f" % (err))
-        
-    if trainer.step > best_step + early_stopping_rounds:
-        print('BREAK. There is no improvement for {} steps'.format(early_stopping_rounds))
-        print("Best step: ", best_step)
-        print("Best Val Error Rate: %0.5f" % (best_val_err))
-        break
+device = torch.device('cpu')
+
+train_dl = DeviceDataLoader(train_dl, device)
+valid_dl = DeviceDataLoader(valid_dl, device)
+
+# to_device(model, device)
+
+
+lr = 0.01
+epochs = 5000
+
+
+
+# train_loop(model, train_dl, valid_dl, epochs=epochs, lr=lr, wd=0.00001)
+criterion = nn.BCELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001) #, momentum=0.9)
+
+for epoch in range(5000):  # loop over the dataset multiple times
+
+    running_loss = 0.0
+    for i, data in enumerate(train_dl, 0):
+        # get the inputs; data is a list of [inputs, labels]
+        x1, x2, labels = data
+
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = model(x1, x2)
+        loss = criterion(torch.nn.functional.softmax(torch.reshape(outputs, (-1,))), labels)
+        loss.backward()
+        optimizer.step()
+
+        # print statistics
+        running_loss += loss.item()
+        if i % 10 == 9:    # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.8f' %
+                  (epoch + 1, i + 1, running_loss / 2000))
+            running_loss = 0.0
+
+print('Finished Training')
