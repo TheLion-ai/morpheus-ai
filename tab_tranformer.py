@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from pytorch_tabnet.pretraining import TabNetPretrainer
 from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn import metrics
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, auc, roc_curve
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
@@ -34,8 +34,8 @@ from torch_losses import DiceLoss
 
 class CBCDataset(Dataset):
     def __init__(self, X, y):
-        self.X_cont = X[:, 0:-2].astype(np.float32)
-        self.X_cat = X[:, -2::].astype(np.int64)
+        self.X_cont = X[:, 0:-1].astype(np.float32)
+        self.X_cat = X[:, -1::].astype(np.int64)
         self.y = y.astype(np.float32)
 
     def __len__(self):
@@ -65,34 +65,16 @@ class DeviceDataLoader():
         """Number of batches"""
         return len(self.dl)
 
+df = pd.read_csv('datasets/processed/balanced_detection1.csv')
+df = df.drop(['Unnamed: 0', 'Unnamed: 0.1'], axis=1)
+df['Sex'] = df['Sex'].astype('int64')
+X = np.array(df.copy().drop("target", axis=1))
+y = np.array(df["target"])
 
-df_desc = pd.read_csv("feature_desc.csv")
-df = pd.read_csv("all_training.csv")
-df.info()
+from sklearn.impute import KNNImputer
 
-
-# Take only CBC columns
-cbc_columns = list(df_desc.loc[df_desc["CBC features"] == 1]["Acronym"])
-cbc_columns = [c for c in cbc_columns if c not in ["MPV", "RDW"]]
-print(f"CBC columns:\n{cbc_columns}\n")
-
-df_cbc = df[cbc_columns]
-print(f"Removed values: {len(df)} - {len(df_cbc)} = {len(df)-len(df_cbc)}")
-
-bin_cols = ["Sex", "Suspect", "target"]
-
-for col in cbc_columns:
-    if col not in bin_cols:
-        df_cbc[col] = df_cbc[col].fillna(df[col].mean())
-    else:
-        df_cbc[col] = df_cbc[col].astype(int)
-
-cbc_cols_del = ["NET", "RBC", "HCT", "MCH", "NE", "EO", "LY", "BAT"]
-df_cbc = df_cbc.drop(cbc_cols_del, axis=1) #.drop(["Sex", "Suspect"], axis=1)
-
-
-X = np.array(df_cbc.copy().drop("target", axis=1))
-y = np.array(df_cbc["target"])
+imputer = KNNImputer(n_neighbors=5)
+X = imputer.fit_transform(X)
 
 
 scalar = StandardScaler()
@@ -103,22 +85,22 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 
-class_weights = compute_class_weight("balanced", classes= np.unique(y), y=y)
-class_weights = torch.tensor(class_weights, dtype=torch.float).cuda()
+# class_weights = compute_class_weight("balanced", classes= np.unique(y), y=y)
+# class_weights = torch.tensor(class_weights, dtype=torch.float).cuda()
 cont_mean_std = torch.randn(10, 2)
 
 model = TabTransformer(
-    categories = (1, 2),      # tuple containing the number of unique values within each category
-    num_continuous = 11,                # number of continuous values
+    categories = (1,),      # tuple containing the number of unique values within each category # bez przecinka po ostatim elemencie nie działa
+    num_continuous = 10,                # number of continuous values
     dim = 32,                           # dimension, paper set at 32
     dim_out = 1,                        # binary prediction, but could be anything
     depth = 6,                          # depth, paper recommended 6
     heads = 8,                          # heads, paper recommends 8
     attn_dropout = 0.1,                 # post-attention dropout
-    ff_dropout = 0.1,                   # feed forward dropout
-    mlp_hidden_mults = (4, 2),          # relative multiples of each hidden dimension of the last mlp to logits
+    ff_dropout = 0.2,                   # feed forward dropout
+    mlp_hidden_mults = (20, 40, 80, 160, 1),          # relative multiples of each hidden dimension of the last mlp to logits
     mlp_act = nn.ReLU(),                # activation for final mlp, defaults to relu, but could be anything else (selu etc)
-    # continuous_mean_std = cont_mean_std # (optional) - normalize the continuous values before layer norm
+    continuous_mean_std = cont_mean_std # (optional) - normalize the continuous values before layer norm
 )
 
 
@@ -137,16 +119,18 @@ valid_dl = DeviceDataLoader(valid_dl, device)
 # to_device(model, device)
 
 
-lr = 0.01
-epochs = 5000
+
+
+f1_prev = 0
 
 
 
 # train_loop(model, train_dl, valid_dl, epochs=epochs, lr=lr, wd=0.00001)
-criterion = nn.BCELoss()
+criterion = nn.BCELoss() #(weight = class_weights)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001) #, momentum=0.9)
-
-for epoch in range(5000):  # loop over the dataset multiple times
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2)
+# scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer)
+for epoch in range(10000):  # loop over the dataset multiple times
 
     running_loss = 0.0
     for i, data in enumerate(train_dl, 0):
@@ -154,19 +138,52 @@ for epoch in range(5000):  # loop over the dataset multiple times
         x1, x2, labels = data
 
         # zero the parameter gradients
-        optimizer.zero_grad()
+        
 
         # forward + backward + optimize
         outputs = model(x1, x2)
-        loss = criterion(torch.nn.functional.softmax(torch.reshape(outputs, (-1,))), labels)
+        loss = criterion(torch.nn.functional.sigmoid(torch.reshape(outputs, (-1,))), labels)
+        # loss = criterion(torch.nn.functional.softmax(outputs), labels)
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         # print statistics
         running_loss += loss.item()
         if i % 10 == 9:    # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.8f' %
-                  (epoch + 1, i + 1, running_loss / 2000))
+            # print('[%d, %5d] loss: %.8f' %
+            #       (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
+    scheduler.step(loss)
+
+    y_test = y_train
+    for i, data in enumerate(train_dl, 0):
+        x1, x2, labels = data
+        y_p = model(x1, x2)
+        y_p = torch.nn.functional.sigmoid(torch.reshape(y_p, (-1,)))
+        y_p = y_p.cpu().detach().numpy()
+        if i == 0:
+            y_pred = y_p
+        else:
+            y_pred = np.hstack((y_pred, y_p))
+
+    y_pred = (y_pred > 0.5).astype(int)
+    f1 = f1_score(y_test, y_pred)
+    acc = accuracy_score(y_test, y_pred)
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1, drop_intermediate=False)
+    auc_val = auc(fpr, tpr)
+    print(f"Epoch {epoch}")
+    print(f"Accuracy: {acc}")
+    print(f"Specificity: {tn / (tn+fp)}")
+    print(f"Sensitivity: {tp / (tp+fn)}")
+    print(f'F1: {f1}')
+    print(f'AUC: {auc_val}')
+    # model._save_to_state_dict()
+    # f1_prev = f1
 
 print('Finished Training')
+
+# X_cont = X_test[:, 0:-1].astype(np.float32)
+# X_cat = X_test[:, -1::].astype(np.int64)
+# y_pred = model(X_cat, X_cont)
