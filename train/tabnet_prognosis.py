@@ -14,9 +14,6 @@ import torch
 from torch.nn.modules.loss import CrossEntropyLoss
 from pytorch_tabnet.tab_model import TabNetClassifier
 
-from torch_losses import *
-from torch_losses import DiceLoss
-
 
 def create_metrics_dict():
     metrics = {
@@ -91,7 +88,7 @@ def get_avg_metrics(metrics):
     print(f"classification report: {class_report}")
 
 # Read dataset
-df = pd.read_csv('../datasets/processed/uck_prognosis.csv')
+df = pd.read_csv('datasets/processed/uck_prognosis.csv')
 df = df[['LYT', 'HGB', 'PLT', 'WBC', 'Age', 'Sex', 'target']]
 df['Sex'] = df['Sex'].replace({'K': 0, 'M': 1}).astype('int64')
 df['target'] = df['target'].replace({0: 0, 1: 1, 2: 1, 3: 2})
@@ -117,7 +114,7 @@ X = scalar.fit_transform(X)
 metrics = create_metrics_dict()
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 for train, test in skf.split(X, y):
-    X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
+    X_train, X_test, y_train, y_test = np.array(X[train]), np.array(X[test]), np.array(y[train]), np.array(y[test])
     # oversample = SMOTE() 
 
     class_weights = compute_class_weight("balanced", classes= np.unique(y), y=y)
@@ -128,13 +125,11 @@ for train, test in skf.split(X, y):
         scheduler_params={"step_size":10, # how to use learning rate scheduler
                         "gamma":0.9},
         scheduler_fn=torch.optim.lr_scheduler.StepLR,
-        mask_type='entmax',
-        n_d= 64,
-        n_a=64,
-        cat_emb_dim = 1,
-        cat_idxs=[5],
-        lambda_sparse=1e-2,
-        n_independent=5
+        mask_type='sparsemax',
+        n_d= 32,
+        n_a=32,
+        cat_emb_dim = 1
+        
         )# This will be overwritten if using pretrain model)
     clf.fit(
             X_train,
@@ -148,5 +143,7 @@ for train, test in skf.split(X, y):
         )
     y_pred = clf.predict(X_test)
     metrics = calc_metrics(y_test, y_pred, metrics)
+    break
 
 get_avg_metrics(metrics)
+clf.save_model('tabnet_prognosis')

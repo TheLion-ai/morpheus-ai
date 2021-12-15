@@ -16,6 +16,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, auc, roc
 df = pd.read_csv('datasets/processed/auxiliary/balanced_uck_detection.csv')
 # df = df.drop(['Unnamed: 0', 'Unnamed: 0.1'], axis=1)
 df = df.drop(['Unnamed: 0'], axis=1)
+df = df[['BAT', 'EOT', 'LYT', 'MOT', 'HGB', 'MCHC', 'MCV', 'PLT', 'WBC', 'Age', 'Sex', 'target']]
 df['Sex'] = df['Sex'].astype('int64')
 
 
@@ -65,7 +66,6 @@ X_test = imputer.fit_transform(X_test)
 # Scale values to <-1, 1>
 scalar = StandardScaler()
 X_train = scalar.fit_transform(X_train)
-scalar = StandardScaler()
 X_test = scalar.fit_transform(X_test)
 
 class_weights = compute_class_weight("balanced", classes= np.unique(y), y=y)
@@ -112,3 +112,5 @@ print(f'F1: {f1}')
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1, drop_intermediate=False)
 auc_val = auc(fpr, tpr)
 print(f'AUC: {auc_val}')
+
+clf.save_model('tabnet_detection')
